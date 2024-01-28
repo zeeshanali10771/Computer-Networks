@@ -1,0 +1,220 @@
+In cisco,
+we use router 2811 and switch 2960 and server-PT(Mail,web,DNS,DHCP) from end devices.
+add cards in the router 1- WIC-2T 2- WIC-1ENET 3- NM-2FE2W
+use automatic wire, so that type of wire should be correct.
+
+Class A IP:
+Subnet Mask: 255.0.0.0
+public Ip:
+     11.0.0.0 (11.0.0.1 - 11.255.255.254)
+     63.0.0.0 (63.0.0.1 - 63.255.255.254)
+     81.0.0.0 (81.0.0.1 - 81.255.255.254)
+     127.0.0.0 (127.0.0.1 - 127.255.255.254)
+private Ip:
+       10.0.0.0 - 10.255.255.255
+
+other than private ip range, all the ip between 1 to 9 and 11 to 127 are public ip in class A.
+
+Class B IP:
+Subnet Mask: 255.255.0.0
+public Ip:
+     128.0.0.0 (128.0.0.1 - 128.255.255.254)
+     132.147.1.0 (132.147.1.1 - 132.147.255.254)
+     172.32.0.0 (172.32.0.1 - 172.32.255.254)
+     181.0.0.0 (181.0.0.1 - 181.255.255.254)
+private Ip:
+       172.16.0.0 - 172.31.255.255
+
+other than private ip range, all the ip between 172.16.xx.xx to 172.31.xx.xx are public ip in class B.
+
+Class C IP:
+Subnet Mask: 255.255.255.0
+public Ip:
+     192.10.0.0 (192.10.0.1 - 192.10.255.254)
+     192.166.0.0 (192.166.0.1 - 192.166.255.254)
+     200.10.10.0 (200.10.10.1 - 200.10.10.254)
+     222.63.32.0 (222.63.32.1 - 222.63.32.254)
+private Ip:
+       192.168.0.0 - 192.168.255.255
+
+other than private ip range, all the ip between 192.0.xx.xx to 192.167.255.255 and 192.169.0.0 to 223.255.255.255 are public ip in class C.
+
+For DHCP Server:
+
+en
+configure terminal
+
+Now to assign ip in the router by cli
+ip address (network address) (subnet mask)
+ip address 192.168.1.1 255.255.255.0
+no shut or no shutdown (use any one)
+
+Now performing dhcp:
+First if you want to reserve the Ip's of your network do this
+ip dhcp excluded-address ( start network ip) (end netwrok ip)
+ip dhcp excluded-address 191.168.1.0 191.168.1.5
+
+Now, create a pool by using CLI
+ip dhcp pool Fast (you can use any name instead of fast)
+network (network Ip) (subnet mask)
+network 192.169.1.0 255.255.255.0
+default-router (network address)
+defaul-router 192.168.1.1
+dns-server (network address)
+dns-server 192.168.1.1
+
+if in case it's not working...
+you can also run these commands
+int fa0/0 (with which port router is connected.)
+ip helper-address (dhcp server ip)
+ip helper-address 191.168.1.1
+
+Now, also create a pool in dhcp server by manualy.
+     open all the pc's and check dhcp is working or not.
+
+For Access List:
+
+Two types of Conditions in Access list
+
+1- To just stop traffic from one host
+Commands:
+access-list 1 deny host 192.168.1.2 (ip of pc or laptop)
+access-list 1 permit any
+
+Now to stop traffic from which network, select that interface that is connected to that router.
+int fa0/0
+ip access-group 1 out
+
+2- To stop traffic from all the network
+Commands:
+access-list 1 deny (network address) (wild card)
+access-list 1 deny 192.168.1.0 0.0.0.255
+access-list 1 permit any
+
+Now to stop traffic from which network, select that interface that is connected to that router.
+int fa0/0
+ip access-group 1 out
+
+after that pass the packets and check it is working or not.
+
+Static Routing
+en
+config terminal
+ip route (network address) (subnetmask) (next-hop ip address/ exit interface)
+if port then port connected with its own router & if address than second address that is connected.
+ip route 192.168.10.0 255.255.255.0 se0/3/0
+ip route 192.168.10.0 255.255.255.0 10.0.0.1
+
+Dynamic Routing
+three types of routing
+1- RIP
+2- EIGRP
+3- OSPF
+
+1- RIP
+Now, first assign the ip's or having the ip's through dhcp server.
+and also having ip in the router.
+
+Now performing the rip routing
+commands:
+en
+configure terminal
+router rip
+version 2
+network (network address) (all the line of the networks that are connected with the router.)
+network 192.168.10.0
+network 192.168.11.0
+
+Now, exit from here and if you want to view the routing is perform, run these commands to view that
+use any one command.
+show ip route
+do show ip route
+show running-config
+
+2- EIGRP:
+commands:
+en
+configure terminal
+router eigrp 5
+network (network Ip) (subnet mask)
+network 192.169.1.3 255.255.0.0
+now all the networks that are connected with the router, add them also.
+
+3- OSPF:
+commands:
+en
+configure terminal
+router ospf 1
+network (network address) (wild card) area (area id)
+network 192.168.1.0 0.0.0.255 area 1
+now all the networks that are connected with the router, add them also.
+
+if any of the command typed wrong, just type no before every command
+such as
+no network 192.168.1.0 0.0.0.255 area 1
+so this will remove the wrong command.
+
+EIGRP & OSPF redistribution
+
+router eigrp 5
+ redistribute ospf 1 metric 100 200 255 1 150 
+ network 181.14.0.20 0.0.0.3
+
+router ospf 1
+ redistribute eigrp 5 metric 255 subnets 
+ network 181.14.0.16 0.0.0.3 area 1
+
+EIGRP & OSPF redistribution
+
+router eigrp 5
+ redistribute ospf 1 metric 100 200 255 1 150 
+ network 181.14.0.44 0.0.0.3
+ network 181.14.0.48 0.0.0.3
+
+router ospf 1
+ redistribute eigrp 5 metric 255 subnets 
+ network 181.14.0.100 0.0.0.3 area 2
+
+OSPF & RIP redistribution
+
+router ospf 1
+ redistribute rip metric 1 subnets 
+ network 181.14.0.56 0.0.0.3 area 2
+
+router rip
+ version 2
+ redistribute ospf 1 metric 3 
+ network 181.14.0.0
+
+Access-list
+
+access-list 1 deny 181.0.0.0 0.1.255.255
+access-list 1 deny host 181.12.0.2
+access-list 1 permit any
+
+interface FastEthernet0/0
+ ip access-group 1 out
+
+Natting
+inside the network connected with the router
+int fa0/0
+ip nat inside
+
+outside the network connected with the same router
+int se0/3/0
+ip nat outside
+
+ip nat inside source list 1 interface Serial0/3/0 overload
+access-list 1 permit 181.12.0.0 0.0.127.255
+access-list 1 permit 181.12.128.0 0.0.127.255
+access-list 1 permit 181.8.0.0 0.0.255.255
+access-list 1 permit 181.0.0.0 0.1.255.255
+access-list 1 permit 181.2.0.0 0.1.255.255
+access-list 1 permit 181.4.0.0 0.1.255.255
+access-list 1 permit 181.9.0.0 0.0.255.255
+access-list 1 permit 181.6.0.0 0.1.255.255
+access-list 1 permit 181.13.0.0 0.0.127.255
+access-list 1 permit 181.13.128.0 0.0.127.255
+access-list 1 permit 181.10.0.0 0.0.255.255
+access-list 1 permit 41.0.0.0 0.0.127.255
+
